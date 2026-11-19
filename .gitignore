@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.zip
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+# jangan pernah commit kredensial proxy / API key
+.env
+*.pem

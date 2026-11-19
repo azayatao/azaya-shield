@@ -1,0 +1,35 @@
+main { width: min(680px, 94vw); margin: 0 auto; padding: 28px 0 60px; display: flex; flex-direction: column; gap: 18px; }
+.head { display: flex; align-items: center; gap: 12px; }
+.head h1 { font-size: 22px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 8px 20px 18px; }
+.card h2 { font-size: 16px; margin: 12px 0 4px; }
+.field { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+.field > label small, .row small { font-weight: 400; }
+textarea, select, input[type="password"], input[type="text"], input[type="number"] {
+  width: 100%; padding: 9px 11px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--text); font: 13px ui-monospace, Consolas, monospace;
+}
+textarea:focus, input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.feed { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 0 2px; font-size: 13px; }
+.small { font-size: 12px; }
+.actions { display: flex; align-items: center; gap: 14px; }
+.hides-list { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
+.hides-site h3 { font-size: 13px; margin-bottom: 4px; }
+.hides-site .meta { color: var(--muted); font-size: 12px; font-weight: 400; }
+.hides-item { display: flex; align-items: center; gap: 10px; padding: 5px 0; border-top: 1px solid var(--line); }
+.hides-item code { flex: 1; min-width: 0; word-break: break-all; font: 12px ui-monospace, Consolas, monospace; color: #cbd5e1; }
+.hides-item .btn { padding: 3px 9px; font-size: 12px; }
+.inline { display: flex; gap: 6px; flex-wrap: wrap; }
+.inline input[type="text"] { flex: 1; min-width: 110px; font-family: inherit; }
+.inline input#placeSearch { min-width: 200px; }
+.place-list { display: flex; flex-direction: column; }
+.place-item { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); }
+.place-item:first-child { border-top: 0; }
+.place-item .info { flex: 1; min-width: 0; }
+.place-item .name { overflow: hidden; text-overflow: ellipsis; }
+.place-item .coords { color: var(--muted); font: 12px ui-monospace, Consolas, monospace; }
+.place-item .btn { padding: 3px 9px; font-size: 12px; }
+.place-item input[type="radio"] { accent-color: var(--accent); }
+.presets .btn { padding: 3px 9px; font-size: 12px; }
+.inline select { padding: 8px 10px; }
+.inline input[type="password"] { flex: 1; min-width: 110px; }

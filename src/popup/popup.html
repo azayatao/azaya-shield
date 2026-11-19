@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>Azaya Shield</title>
+  <link rel="stylesheet" href="../ui/theme.css">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="head">
+    <img src="../../icons/icon48.png" alt="" width="30" height="30">
+    <div class="head-text">
+      <h1>Azaya Shield</h1>
+      <p id="host" class="muted">…</p>
+    </div>
+  </header>
+
+  <section id="status" class="status safe" aria-live="polite">
+    <div id="statusTitle" class="status-title">Memeriksa…</div>
+    <div id="statusSub" class="status-sub"></div>
+    <ul id="reasons" class="reasons"></ul>
+  </section>
+
+  <section class="stats">
+    <div class="stat"><b id="adsCount">–</b><span>iklan &amp; pelacak diblokir di halaman ini</span></div>
+    <div class="stat"><b id="threatsCount">0</b><span>situs berbahaya diblokir (total)</span></div>
+  </section>
+
+  <section class="card">
+    <label class="row">
+      <span>Blokir iklan</span>
+      <span class="switch"><input type="checkbox" data-key="adBlock"><span class="slider"></span></span>
+    </label>
+    <label class="row">
+      <span>Blokir pelacak</span>
+      <span class="switch"><input type="checkbox" data-key="trackerBlock"><span class="slider"></span></span>
+    </label>
+    <label class="row">
+      <span>Deteksi situs berbahaya</span>
+      <span class="switch"><input type="checkbox" data-key="threatProtection"><span class="slider"></span></span>
+    </label>
+    <label class="row">
+      <span>Lindungi email utama<small>Cegah pengiriman form tak sengaja; atur alamat di Pengaturan.</small></span>
+      <span class="switch"><input type="checkbox" data-key="emailGuardEnabled"><span class="slider"></span></span>
+    </label>
+    <label class="row">
+      <span>Konfirmasi login situs belajar<small>Atur domain di Pengaturan lanjutan.</small></span>
+      <span class="switch"><input type="checkbox" data-key="loginGuardEnabled"><span class="slider"></span></span>
+    </label>
+  </section>
+
+  <section class="card geo">
+    <div class="row"><span>Proxy (ganti IP)</span></div>
+    <div class="proxy-controls">
+      <select id="proxySelect" hidden aria-label="Profil proxy"></select>
+      <button id="proxyRandom" class="btn" hidden type="button">Pilih acak</button>
+    </div>
+    <p id="proxyHint" class="muted small" hidden></p>
+  </section>
+
+  <section class="card geo">
+    <label class="row">
+      <span>Lokasi palsu</span>
+      <span class="switch"><input type="checkbox" data-key="fakeLocation"><span class="slider"></span></span>
+    </label>
+    <select id="placeSelect" hidden aria-label="Tempat lokasi palsu"></select>
+    <p id="geoHint" class="muted small" hidden></p>
+  </section>
+
+  <section id="pickerBox" class="card picker" hidden>
+    <button id="pickElement" class="btn">Sembunyikan elemen di halaman ini…</button>
+    <p class="muted small">Untuk overlay / pop-up bandel, termasuk dinding anti-adblock.</p>
+    <div id="hidesInfo" class="hides" hidden>
+      <span id="hidesCount"></span>
+      <a href="#" id="clearHides">Hapus semua</a>
+    </div>
+  </section>
+
+  <button id="pauseSite" class="btn" hidden>Jeda ad blocker di situs ini</button>
+
+  <footer>
+    <a href="#" id="openLab">Lab edukasi</a> ·
+    <a href="#" id="openOptions">Pengaturan lanjutan</a>
+  </footer>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

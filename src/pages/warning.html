@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>Situs berbahaya diblokir – Azaya Shield</title>
+  <link rel="stylesheet" href="../ui/theme.css">
+  <link rel="stylesheet" href="warning.css">
+</head>
+<body>
+  <main class="wrap">
+    <div class="icon" aria-hidden="true">⛔</div>
+    <h1>Situs ini diblokir</h1>
+    <p class="lead">Azaya Shield menilai situs di bawah ini kemungkinan besar <b>phishing atau malware</b>.</p>
+
+    <div class="target" id="target"></div>
+
+    <h2>Kenapa diblokir?</h2>
+    <ul id="reasons" class="reasons"></ul>
+    <p class="score muted" id="score"></p>
+
+    <div class="actions">
+      <button id="back" class="btn primary">Keluar dari sini</button>
+      <button id="proceed" class="btn danger">Aku paham risikonya, lanjutkan</button>
+    </div>
+    <p class="muted small">Kalau kamu lanjut, situs ini tidak diblokir lagi sampai browser ditutup.</p>
+  </main>
+  <script type="module" src="warning.js"></script>
+</body>
+</html>

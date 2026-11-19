@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab edukasi – Azaya Shield</title>
+  <link rel="stylesheet" href="../ui/theme.css">
+  <link rel="stylesheet" href="lab.css">
+</head>
+<body>
+  <main>
+    <header class="head">
+      <img src="../../icons/icon48.png" alt="" width="36" height="36">
+      <div>
+        <h1>Lab edukasi keamanan</h1>
+        <p class="muted small">Simulasi lokal menggunakan analyzer Azaya Shield.</p>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>Mode aman</h2>
+      <p>Semua URL memakai domain reservasi, tidak ada halaman luar yang dibuka, tidak ada request jaringan, dan tidak ada kredensial yang diminta atau disimpan.</p>
+      <p>Hasil simulasi ini menunjukkan penilaian analyzer; lab tidak melakukan serangan atau mengubah proteksi browser.</p>
+    </section>
+
+    <section class="card">
+      <h2>Pilih skenario</h2>
+      <div id="scenarioList" class="scenario-list"></div>
+      <button id="runAll" class="btn">Jalankan semua simulasi</button>
+    </section>
+
+    <section class="card" aria-live="polite">
+      <h2>Hasil</h2>
+      <div id="results" class="results">
+        <p class="muted">Pilih skenario untuk melihat cara analyzer memberi penilaian.</p>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="lab.js"></script>
+</body>
+</html>

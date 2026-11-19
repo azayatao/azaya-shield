@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Tes
+        run: npm test
+      - name: Rule hasil generate harus up-to-date
+        run: |
+          node scripts/build-rules.mjs
+          git diff --exit-code rules/ || (echo "rules/ belum di-generate ulang: jalankan 'npm run build:rules' lalu commit." && exit 1)
+      - name: Manifest valid & versi sinkron dengan package.json
+        run: |
+          node -e '
+            const m = JSON.parse(require("fs").readFileSync("manifest.json","utf8"));
+            const p = JSON.parse(require("fs").readFileSync("package.json","utf8"));
+            if (m.manifest_version !== 3) throw new Error("manifest_version harus 3");
+            if (m.version !== p.version) throw new Error(`versi manifest (${m.version}) != package.json (${p.version})`);
+          '

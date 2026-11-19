@@ -1,0 +1,29 @@
+name: Release
+
+# Buat rilis otomatis saat kamu push tag, mis.:  git tag v1.3.0 && git push origin v1.3.0
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test
+      - name: Tag harus sama dengan versi manifest
+        run: |
+          V=$(node -p 'require("./manifest.json").version')
+          [ "v$V" = "$GITHUB_REF_NAME" ] || (echo "Tag $GITHUB_REF_NAME != versi manifest v$V" && exit 1)
+      - name: Paketkan ekstensi
+        run: zip -r "azaya-shield-$GITHUB_REF_NAME.zip" manifest.json src rules stubs icons README.md LICENSE
+      - name: Buat GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "$GITHUB_REF_NAME" "azaya-shield-$GITHUB_REF_NAME.zip" --generate-notes --title "Azaya Shield $GITHUB_REF_NAME"

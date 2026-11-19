@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>Pengaturan – Azaya Shield</title>
+  <link rel="stylesheet" href="../ui/theme.css">
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main>
+    <header class="head">
+      <img src="../../icons/icon48.png" alt="" width="36" height="36">
+      <h1>Azaya Shield — Pengaturan</h1>
+    </header>
+
+    <section class="card">
+      <h2>Pemblokiran iklan</h2>
+      <label class="row">
+        <span>Sembunyikan kotak iklan yang tersisa<small>Filter kosmetik: menyembunyikan elemen iklan yang lolos dari pemblokiran jaringan.</small></span>
+        <span class="switch"><input type="checkbox" id="cosmeticFilter"><span class="slider"></span></span>
+      </label>
+      <label class="row">
+        <span>Mode tersamar<small>Sembunyikan sisa iklan dengan cara yang tidak memicu deteksi anti-adblock (umpan .adsbox / .ad-banner tidak disentuh). Matikan untuk perilaku klasik v1.</small></span>
+        <span class="switch"><input type="checkbox" id="stealthCosmetic"><span class="slider"></span></span>
+      </label>
+      <label class="row">
+        <span>Stub skrip iklan &amp; pelacak<small>Skrip iklan (AdSense, GPT, Analytics, dll) dialihkan ke versi palsu yang "berhasil dimuat", bukan sekadar diblokir. Ini yang paling ampuh melawan dinding anti-adblock.</small></span>
+        <span class="switch"><input type="checkbox" id="stubScripts"><span class="slider"></span></span>
+      </label>
+      <div class="field">
+        <label for="adAllowlist">Situs yang ad blocker-nya dijeda <small>(satu domain per baris)</small></label>
+        <textarea id="adAllowlist" rows="4" placeholder="contoh: situs-favorit.com"></textarea>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Mode belajar — lindungi email</h2>
+      <label class="row">
+        <span>Cegah email pribadi terkirim tanpa sengaja<small>Pengiriman form biasa yang berisi email di daftar akan dibatalkan dan meminta konfirmasi. Email dibandingkan secara lokal di perangkat ini.</small></span>
+        <span class="switch"><input type="checkbox" id="emailGuardEnabled"><span class="slider"></span></span>
+      </label>
+      <div class="field">
+        <label for="protectedEmails">Email yang ingin dilindungi <small>(satu alamat per baris)</small></label>
+        <textarea id="protectedEmails" rows="3" placeholder="nama@example.com" autocomplete="off"></textarea>
+        <p id="emailGuardError" class="muted small" hidden></p>
+        <p class="muted small">Fitur ini bukan mode anonim: situs masih dapat mengenali akun melalui sesi login, cookie, alamat IP, atau fingerprint. Form yang dikirim lewat JavaScript khusus mungkin tidak terdeteksi.</p>
+      </div>
+      <label class="row">
+        <span>Konfirmasi login di situs terpilih<small>Submit form yang memiliki kolom password akan dicegah; kamu bisa menutup tab atau mengizinkan submit satu kali. Ini tidak mengeluarkan akun dari sesi situs.</small></span>
+        <span class="switch"><input type="checkbox" id="loginGuardEnabled"><span class="slider"></span></span>
+      </label>
+      <div class="field">
+        <label for="loginGuardSites">Situs yang dijaga <small>(satu domain per baris)</small></label>
+        <textarea id="loginGuardSites" rows="3" placeholder="contoh: kelas.example.com"></textarea>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Proxy (ganti IP)</h2>
+      <p class="muted small">Ini memakai proxy browser, bukan terowongan VPN system-level. IP publik hanya berubah jika trafik lewat endpoint proxy yang kamu sediakan (VPS atau layanan proxy/VPN dengan endpoint HTTP/HTTPS/SOCKS). Simpan beberapa endpoint di lokasi berbeda untuk memilih manual di popup atau menekan "Pilih acak". Pilihan acak mengganti endpoint yang aktif saat tombol ditekan, bukan setiap request. IP yang terlihat situs ditentukan server proxy, bukan label lokasi. Operator proxy bisa melihat domain yang kamu buka — pilih yang kamu percaya, hindari proxy gratis publik.</p>
+      <p id="proxyStatus" class="muted small"></p>
+
+      <div class="field">
+        <label for="proxyMode">Mode</label>
+        <select id="proxyMode">
+          <option value="off">Mati (koneksi langsung)</option>
+          <option value="all">Semua situs lewat proxy</option>
+          <option value="sites">Hanya situs tertentu lewat proxy</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Profil proxy <small>(yang dipilih dipakai)</small></label>
+        <div id="proxyList" class="place-list"></div>
+      </div>
+
+      <div class="field">
+        <label>Tambah profil</label>
+        <div class="inline">
+          <input id="pxLabel" type="text" placeholder="Nama (mis. Singapura)">
+          <select id="pxScheme">
+            <option value="http">HTTP</option>
+            <option value="https">HTTPS</option>
+            <option value="socks5">SOCKS5</option>
+            <option value="socks4">SOCKS4</option>
+          </select>
+          <input id="pxHost" type="text" placeholder="Host (mis. sg.proxy.com)">
+          <input id="pxPort" type="text" placeholder="Port" inputmode="numeric" style="max-width:90px">
+        </div>
+        <div class="inline" style="margin-top:6px">
+          <input id="pxUser" type="text" placeholder="Username (opsional)" autocomplete="off">
+          <input id="pxPass" type="password" placeholder="Password (opsional)" autocomplete="new-password">
+          <button id="pxAdd" class="btn">Tambah</button>
+        </div>
+        <p class="muted small">Login hanya didukung untuk proxy HTTP/HTTPS (Chrome tidak mendukung login SOCKS). Password disimpan apa adanya di penyimpanan lokal ekstensi ini.</p>
+        <p id="pxError" class="muted small" hidden></p>
+      </div>
+
+      <div class="field">
+        <label for="proxySites">Situs yang lewat proxy <small>(mode "hanya situs tertentu"; satu domain per baris)</small></label>
+        <textarea id="proxySites" rows="3" placeholder="whatismyipaddress.com"></textarea>
+      </div>
+      <div class="field">
+        <label for="proxyBypass">Situs yang dikecualikan <small>(mode "semua situs"; tetap koneksi langsung, mis. m-banking)</small></label>
+        <textarea id="proxyBypass" rows="3" placeholder="bank.co.id"></textarea>
+      </div>
+
+      <label class="row">
+        <span>Proxy mati → koneksi gagal<small>Kalau server proxy tidak bisa dihubungi, internet putus alih-alih jatuh ke IP aslimu. Disarankan aktif.</small></span>
+        <span class="switch"><input type="checkbox" id="proxyFailClosed"><span class="slider"></span></span>
+      </label>
+      <label class="row">
+        <span>Cegah kebocoran WebRTC<small>Mencegah situs mengintip IP asli lewat WebRTC saat proxy aktif.</small></span>
+        <span class="switch"><input type="checkbox" id="proxyBlockWebRTC"><span class="slider"></span></span>
+      </label>
+
+      <div class="field">
+        <button id="ipCheck" class="btn">Cek IP saya sekarang</button>
+        <div id="ipResult" class="muted small" style="margin-top:8px"></div>
+        <button id="ipToFake" class="btn" hidden style="margin-top:8px">Samakan lokasi palsu dengan lokasi IP ini</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Lokasi palsu</h2>
+      <label class="row">
+        <span>Aktifkan lokasi palsu<small>Saat aktif dan ada tempat terpilih, permintaan lokasi otomatis dijawab menggunakan koordinat tersebut tanpa popup izin browser. Memilih atau menambahkan tempat akan mengaktifkannya. Kalau belum memilih tempat, permintaan ditolak agar lokasi asli tidak bocor. Muat ulang halaman setelah mengubah pengaturan. Google Maps dapat memakai lokasi IP untuk tampilan awal; klik tombol "Lokasi saya" untuk menguji koordinat browser. Ini tidak mengubah lokasi IP; itu bergantung pada endpoint proxy.</small></span>
+        <span class="switch"><input type="checkbox" id="fakeLocation"><span class="slider"></span></span>
+      </label>
+
+      <div class="field">
+        <label for="placeSearch">Cari tempat</label>
+        <div class="inline">
+          <input id="placeSearch" type="text" placeholder="contoh: Tugu Pahlawan, Surabaya">
+          <button id="placeSearchBtn" class="btn">Cari</button>
+        </div>
+        <p class="muted small">Teks pencarian dikirim ke OpenStreetMap (Nominatim) untuk mencari koordinat.</p>
+        <div id="placeResults" class="place-list"></div>
+      </div>
+
+      <div class="field">
+        <label>Atau isi koordinat sendiri <small>(bisa paste "lat, lon" dari Google Maps ke kolom latitude)</small></label>
+        <div class="inline">
+          <input id="manualLabel" type="text" placeholder="Nama (opsional)">
+          <input id="manualLat" type="text" placeholder="Latitude" inputmode="decimal">
+          <input id="manualLon" type="text" placeholder="Longitude" inputmode="decimal">
+          <button id="manualAdd" class="btn">Tambah</button>
+        </div>
+        <div class="inline presets" id="presets"></div>
+        <p id="manualError" class="muted small" hidden></p>
+      </div>
+
+      <div class="field">
+        <label>Tempat tersimpan <small>(yang dipilih dipakai saat lokasi aktif)</small></label>
+        <div id="placeList" class="place-list"></div>
+      </div>
+
+      <div class="field">
+        <label for="fakeAccuracy">Akurasi yang dilaporkan <small>(meter; koordinat digeser sedikit tiap permintaan supaya terlihat seperti GPS asli)</small></label>
+        <input id="fakeAccuracy" type="number" min="5" max="5000" step="5">
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Elemen yang disembunyikan manual</h2>
+      <p class="muted small">Dibuat lewat popup → "Sembunyikan elemen di halaman ini…". Perubahan di sini langsung berlaku.</p>
+      <div id="hidesList" class="hides-list"></div>
+    </section>
+
+    <section class="card">
+      <h2>Deteksi situs berbahaya</h2>
+      <label class="row">
+        <span>Sinkron daftar malware URLhaus<small>Diunduh otomatis tiap 12 jam dari abuse.ch. Dicek lokal, tidak ada URL yang dikirim keluar.</small></span>
+        <span class="switch"><input type="checkbox" id="useUrlhaus"><span class="slider"></span></span>
+      </label>
+      <div class="feed">
+        <span id="feedInfo" class="muted">Belum pernah diperbarui.</span>
+        <button id="updateFeed" class="btn">Perbarui sekarang</button>
+      </div>
+
+      <div class="field">
+        <label for="safeBrowsingKey">Google Safe Browsing API key <small>(opsional)</small></label>
+        <input id="safeBrowsingKey" type="password" autocomplete="off" placeholder="AIza…">
+        <p class="muted small">Deteksi lebih akurat, tapi <b>setiap URL yang kamu buka dikirim ke Google</b> untuk dicek. Kosongkan kalau tidak mau.</p>
+      </div>
+
+      <div class="field">
+        <label for="customBlocklist">Daftar blokir sendiri <small>(satu domain per baris)</small></label>
+        <textarea id="customBlocklist" rows="4" placeholder="contoh: situs-penipuan.com"></textarea>
+      </div>
+    </section>
+
+    <div class="actions">
+      <button id="save" class="btn primary">Simpan</button>
+      <span id="saved" class="muted" hidden>Tersimpan ✓</span>
+    </div>
+  </main>
+  <script type="module" src="options.js"></script>
+</body>
+</html>

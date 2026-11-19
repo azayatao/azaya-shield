@@ -1,0 +1,19 @@
+main { width: min(760px, 94vw); margin: 0 auto; padding: 28px 0 60px; display: flex; flex-direction: column; gap: 16px; }
+.head { display: flex; align-items: center; gap: 12px; }
+.head h1 { font-size: 22px; }
+.small { font-size: 12px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 20px 18px; }
+.card h2 { font-size: 16px; margin: 2px 0 10px; }
+.card p { color: var(--muted); line-height: 1.55; }
+.scenario-list, .results { display: flex; flex-direction: column; gap: 10px; }
+.scenario { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px 12px; text-align: left; }
+.scenario small { color: var(--muted); }
+#runAll { margin-top: 12px; }
+.result { border-top: 1px solid var(--line); padding-top: 10px; }
+.result:first-child { border-top: 0; padding-top: 0; }
+.result h3 { font-size: 14px; margin: 0 0 4px; }
+.result p { margin: 3px 0; }
+.level-safe { color: var(--safe); }
+.level-warn { color: var(--warn); }
+.level-block { color: var(--danger); }
+.result ul { margin: 6px 0 0; padding-left: 20px; }

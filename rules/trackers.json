@@ -1,0 +1,119 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "block"
+    },
+    "condition": {
+      "requestDomains": [
+        "google-analytics.com",
+        "analytics.google.com",
+        "stats.g.doubleclick.net",
+        "scorecardresearch.com",
+        "quantserve.com",
+        "hotjar.com",
+        "hotjar.io",
+        "fullstory.com",
+        "mouseflow.com",
+        "crazyegg.com",
+        "luckyorange.com",
+        "clarity.ms",
+        "bat.bing.com",
+        "ads-twitter.com",
+        "analytics.twitter.com",
+        "analytics.tiktok.com",
+        "ct.pinterest.com",
+        "px.ads.linkedin.com",
+        "snap.licdn.com",
+        "bluekai.com",
+        "demdex.net",
+        "omtrdc.net",
+        "everesttech.net",
+        "krxd.net",
+        "exelator.com",
+        "rlcdn.com",
+        "agkn.com",
+        "adsymptotic.com",
+        "mathtag.com",
+        "bkrtx.com",
+        "imrworldwide.com",
+        "chartbeat.net",
+        "branch.io",
+        "app-measurement.com",
+        "appsflyer.com",
+        "adjust.com",
+        "mc.yandex.ru",
+        "mxpnl.com",
+        "heapanalytics.com"
+      ],
+      "resourceTypes": [
+        "script",
+        "image",
+        "xmlhttprequest",
+        "sub_frame",
+        "ping",
+        "media",
+        "stylesheet",
+        "object",
+        "font",
+        "websocket",
+        "other"
+      ]
+    }
+  },
+  {
+    "id": 100,
+    "priority": 1,
+    "action": {
+      "type": "block"
+    },
+    "condition": {
+      "urlFilter": "||facebook.com/tr?",
+      "resourceTypes": [
+        "image",
+        "ping",
+        "xmlhttprequest",
+        "script",
+        "sub_frame",
+        "other"
+      ]
+    }
+  },
+  {
+    "id": 101,
+    "priority": 1,
+    "action": {
+      "type": "block"
+    },
+    "condition": {
+      "urlFilter": "||facebook.com/tr/",
+      "resourceTypes": [
+        "image",
+        "ping",
+        "xmlhttprequest",
+        "script",
+        "sub_frame",
+        "other"
+      ]
+    }
+  },
+  {
+    "id": 102,
+    "priority": 1,
+    "action": {
+      "type": "block"
+    },
+    "condition": {
+      "urlFilter": "||connect.facebook.net/signals/",
+      "resourceTypes": [
+        "image",
+        "ping",
+        "xmlhttprequest",
+        "script",
+        "sub_frame",
+        "other"
+      ]
+    }
+  }
+]

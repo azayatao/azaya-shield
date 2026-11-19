@@ -1,17 +1,15 @@
-// Lokasi palsu — berjalan di "main world" (dunia yang sama dengan skrip situs) pada document_start.
-// Menimpa navigator.geolocation supaya situs yang meminta lokasi mendapat koordinat pilihan pengguna.
-// Konfigurasi datang dari geo-bridge.js (dunia terisolasi, yang bisa membaca chrome.storage) lewat event DOM.
-//
-// Prinsip aman: kalau konfigurasi belum sampai, permintaan MENUNGGU (bukan diteruskan ke GPS asli).
-// Kalau fitur aktif tapi belum ada tempat yang dipilih, permintaan ditolak (PERMISSION_DENIED),
-// supaya lokasi asli tidak pernah bocor karena lupa memilih.
+// Lokasi palsu untuk navigator.geolocation.
+// IMPORTANT: this script and its bridge communicate through page-visible DOM events.
+// The nonce prevents accidental/stale messages; it is NOT a security boundary against
+// hostile page JavaScript. Do not rely on this feature to protect sensitive location data
+// from a deliberately adversarial page; see SECURITY-NOTES.md.
 
 (() => {
   "use strict";
   const w = window;
-  const CFG_EVENT = "__azg";   // bridge → main : konfigurasi (JSON string)
-  const REQ_EVENT = "__azgq";  // main → bridge : minta konfigurasi
-  const READY_EVENT = "__azgr"; // bridge → main : siap menerima permintaan konfigurasi
+  const CFG_EVENT = "__azg";
+  const REQ_EVENT = "__azgq";
+  const READY_EVENT = "__azgr";
   const proto = w.Geolocation && w.Geolocation.prototype;
   if (!proto) return;
 
@@ -19,25 +17,23 @@
   w.crypto.getRandomValues(nonceBytes);
   const configNonce = Array.from(nonceBytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 
-  // ---- menyamarkan fungsi tiruan agar toString() terlihat "native" ------------------------------
+  // Keep the existing API shape for compatibility, but do not describe this as stealth.
   const natives = new WeakMap();
   const origToString = Function.prototype.toString;
-  const fakeToString = function toString() {
-    const text = natives.get(this);
-    return text !== undefined ? text : origToString.call(this);
-  };
-  natives.set(fakeToString, "function toString() { [native code] }");
-  Object.defineProperty(Function.prototype, "toString", { value: fakeToString, writable: true, configurable: true, enumerable: false });
   const mask = (fn, name, length) => {
     Object.defineProperty(fn, "name", { value: name, configurable: true });
     Object.defineProperty(fn, "length", { value: length, configurable: true });
     natives.set(fn, `function ${name}() { [native code] }`);
     return fn;
   };
-  const install = (target, name, fn) =>
-    Object.defineProperty(target, name, { value: fn, writable: true, enumerable: true, configurable: true });
+  const fakeToString = function toString() {
+    const text = natives.get(this);
+    return text !== undefined ? text : origToString.call(this);
+  };
+  natives.set(fakeToString, "function toString() { [native code] }");
+  Object.defineProperty(Function.prototype, "toString", { value: fakeToString, writable: true, configurable: true, enumerable: false });
+  const install = (target, name, fn) => Object.defineProperty(target, name, { value: fn, writable: true, enumerable: true, configurable: true });
 
-  // ---- konfigurasi ---------------------------------------------------------------------------
   let cfg = null;
   const waiting = [];
   let timeoutId = 0;
@@ -49,49 +45,56 @@
     w.dispatchEvent(new CustomEvent(REQ_EVENT, { detail: configNonce }));
   });
 
-  w.addEventListener(CFG_EVENT, (e) => {
+  w.addEventListener(CFG_EVENT, (event) => {
     try {
       if (cfg) return;
-      const message = JSON.parse(e.detail);
+      const message = JSON.parse(event.detail);
       if (message?.nonce !== configNonce) return;
-      const c = message.config;
-      if (!c || typeof c !== "object" || typeof c.enabled !== "boolean") return;
-      if (c.enabled && !c.block) {
-        if (!Number.isFinite(c.lat) || c.lat < -90 || c.lat > 90 ||
-            !Number.isFinite(c.lon) || c.lon < -180 || c.lon > 180) return;
+      const candidate = message.config;
+      if (!candidate || typeof candidate !== "object" || typeof candidate.enabled !== "boolean") return;
+      if (candidate.enabled && typeof candidate.block !== "boolean") return;
+      if (candidate.enabled && !candidate.block) {
+        if (!Number.isFinite(candidate.lat) || candidate.lat < -90 || candidate.lat > 90 ||
+            !Number.isFinite(candidate.lon) || candidate.lon < -180 || candidate.lon > 180) return;
+        if (candidate.accuracy !== undefined && (!Number.isFinite(candidate.accuracy) || candidate.accuracy < 5 || candidate.accuracy > 5000)) return;
       }
-      cfg = c;
+      cfg = {
+        enabled: candidate.enabled,
+        block: candidate.enabled ? candidate.block : false,
+        lat: candidate.lat,
+        lon: candidate.lon,
+        accuracy: candidate.accuracy,
+      };
       clearTimeout(timeoutId);
       for (const fn of waiting.splice(0)) fn();
-    } catch { /* abaikan */ }
+    } catch { /* malformed or stale page event */ }
   });
 
   function whenReady(fn) {
     if (cfg) return fn();
     waiting.push(fn);
     if (!timeoutId) {
-      // Konfigurasi tak kunjung datang → tolak (jangan bocorkan lokasi asli).
       timeoutId = setTimeout(() => {
         if (!cfg) cfg = { enabled: true, block: true };
-        for (const f of waiting.splice(0)) f();
+        for (const queued of waiting.splice(0)) queued();
       }, 3000);
     }
   }
 
-  // ---- membangun objek posisi ---------------------------------------------------------------
   const rand = () => Math.random();
-  const gauss = () => (rand() + rand() + rand() + rand() - 2) / 2; // ≈ -1..1, condong ke tengah
+  const gauss = () => (rand() + rand() + rand() + rand() - 2) / 2;
 
   function jittered(lat, lon, accuracy) {
     const meters = accuracy / 3;
     const dLat = (gauss() * meters) / 111320;
-    const dLon = (gauss() * meters) / (111320 * Math.max(0.01, Math.cos((lat * Math.PI) / 180)));
-    return [lat + dLat, lon + dLon];
+    const cosLat = Math.max(0.01, Math.abs(Math.cos((lat * Math.PI) / 180)));
+    const dLon = (gauss() * meters) / (111320 * cosLat);
+    return [Math.max(-90, Math.min(90, lat + dLat)), Math.max(-180, Math.min(180, lon + dLon))];
   }
 
   function define(obj, props) {
-    for (const [k, v] of Object.entries(props)) {
-      Object.defineProperty(obj, k, { value: v, enumerable: true, configurable: true, writable: false });
+    for (const [key, value] of Object.entries(props)) {
+      Object.defineProperty(obj, key, { value, enumerable: true, configurable: true, writable: false });
     }
   }
 
@@ -99,56 +102,38 @@
     const accuracy = Math.min(5000, Math.max(5, Number(cfg.accuracy) || 25));
     const [lat, lon] = jittered(cfg.lat, cfg.lon, accuracy);
     const coords = Object.create((w.GeolocationCoordinates && w.GeolocationCoordinates.prototype) || Object.prototype);
-    define(coords, {
-      latitude: lat, longitude: lon, accuracy,
-      altitude: null, altitudeAccuracy: null, heading: null, speed: null,
-    });
-    Object.defineProperty(coords, "toJSON", {
-      value: () => ({ latitude: lat, longitude: lon, accuracy, altitude: null, altitudeAccuracy: null, heading: null, speed: null }),
-      configurable: true,
-    });
-    const pos = Object.create((w.GeolocationPosition && w.GeolocationPosition.prototype) || Object.prototype);
-    define(pos, { coords, timestamp: Date.now() });
-    Object.defineProperty(pos, "toJSON", {
-      value: () => ({ coords: coords.toJSON(), timestamp: pos.timestamp }),
-      configurable: true,
-    });
-    return pos;
+    define(coords, { latitude: lat, longitude: lon, accuracy, altitude: null, altitudeAccuracy: null, heading: null, speed: null });
+    Object.defineProperty(coords, "toJSON", { value: () => ({ latitude: lat, longitude: lon, accuracy, altitude: null, altitudeAccuracy: null, heading: null, speed: null }), configurable: true });
+    const position = Object.create((w.GeolocationPosition && w.GeolocationPosition.prototype) || Object.prototype);
+    define(position, { coords, timestamp: Date.now() });
+    Object.defineProperty(position, "toJSON", { value: () => ({ coords: coords.toJSON(), timestamp: position.timestamp }), configurable: true });
+    return position;
   }
 
   function makeDeniedError() {
-    const err = Object.create((w.GeolocationPositionError && w.GeolocationPositionError.prototype) || Object.prototype);
-    define(err, { code: 1, message: "User denied Geolocation" });
-    return err;
+    const error = Object.create((w.GeolocationPositionError && w.GeolocationPositionError.prototype) || Object.prototype);
+    define(error, { code: 1, message: "User denied Geolocation" });
+    return error;
   }
 
-  const later = (fn) => setTimeout(fn, 80 + rand() * 250); // GPS asli tidak membalas instan
-
-  // ---- penimpaan metode ---------------------------------------------------------------------
-  const orig = {
-    getCurrentPosition: proto.getCurrentPosition,
-    watchPosition: proto.watchPosition,
-    clearWatch: proto.clearWatch,
-  };
-  const watches = new Map(); // id palsu → { timer, realId }
-  let nextId = 900000;       // jauh dari id asli (kecil) supaya tidak bentrok
+  const later = (fn) => setTimeout(fn, 80 + rand() * 250);
+  const original = { getCurrentPosition: proto.getCurrentPosition, watchPosition: proto.watchPosition, clearWatch: proto.clearWatch };
+  const watches = new Map();
+  let nextId = 900000;
 
   function respond(success, error) {
     if (cfg.block) {
       if (typeof error === "function") error(makeDeniedError());
-      return false;
+      return;
     }
     if (typeof success === "function") success(makePosition());
-    return true;
   }
 
   const getCurrentPosition = {
     getCurrentPosition(success, error, options) {
-      if (arguments.length < 1) {
-        throw new TypeError("Failed to execute 'getCurrentPosition' on 'Geolocation': 1 argument required, but only 0 present.");
-      }
+      if (arguments.length < 1) throw new TypeError("Failed to execute 'getCurrentPosition': 1 argument required.");
       whenReady(() => {
-        if (!cfg.enabled) return orig.getCurrentPosition.call(this, success, error, options);
+        if (!cfg.enabled) return original.getCurrentPosition.call(this, success, error, options);
         later(() => respond(success, error));
       });
     },
@@ -156,21 +141,18 @@
 
   const watchPosition = {
     watchPosition(success, error, options) {
-      if (arguments.length < 1) {
-        throw new TypeError("Failed to execute 'watchPosition' on 'Geolocation': 1 argument required, but only 0 present.");
-      }
+      if (arguments.length < 1) throw new TypeError("Failed to execute 'watchPosition': 1 argument required.");
       const id = nextId++;
       const entry = { timer: 0, realId: null };
       watches.set(id, entry);
       whenReady(() => {
-        if (!watches.has(id)) return; // sudah di-clear
+        if (!watches.has(id)) return;
         if (!cfg.enabled) {
-          entry.realId = orig.watchPosition.call(this, success, error, options);
+          entry.realId = original.watchPosition.call(this, success, error, options);
           return;
         }
-        const tick = () => respond(success, error);
-        later(tick);
-        if (!cfg.block) entry.timer = setInterval(tick, 8000 + rand() * 4000);
+        later(() => { if (watches.has(id)) respond(success, error); });
+        if (!cfg.block) entry.timer = setInterval(() => { if (watches.has(id)) respond(success, error); }, 8000 + rand() * 4000);
       });
       return id;
     },
@@ -179,9 +161,9 @@
   const clearWatch = {
     clearWatch(id) {
       const entry = watches.get(id);
-      if (!entry) return orig.clearWatch.apply(this, arguments);
+      if (!entry) return original.clearWatch.apply(this, arguments);
       clearInterval(entry.timer);
-      if (entry.realId !== null) orig.clearWatch.call(this, entry.realId);
+      if (entry.realId !== null) original.clearWatch.call(this, entry.realId);
       watches.delete(id);
     },
   }.clearWatch;
@@ -190,29 +172,22 @@
   install(proto, "watchPosition", mask(watchPosition, "watchPosition", 1));
   install(proto, "clearWatch", mask(clearWatch, "clearWatch", 1));
 
-  // ---- Permissions API: laporkan "granted" supaya situs tidak mengira lokasi diblokir --------------
-  const P = w.Permissions && w.Permissions.prototype;
-  if (P && typeof P.query === "function") {
-    const origQuery = P.query;
+  const permissionsProto = w.Permissions && w.Permissions.prototype;
+  if (permissionsProto && typeof permissionsProto.query === "function") {
+    const originalQuery = permissionsProto.query;
     const query = {
-      query(desc) {
-        const result = origQuery.apply(this, arguments);
-        if (!desc || desc.name !== "geolocation") return result;
-        return result.then(
-          (status) =>
-            new Promise((resolve) =>
-              whenReady(() => {
-                if (cfg.enabled) {
-                  const state = cfg.block ? "denied" : "granted";
-                  try { Object.defineProperty(status, "state", { get: () => state, configurable: true }); } catch { /* abaikan */ }
-                }
-                resolve(status);
-              }),
-            ),
-        );
+      query(descriptor) {
+        const result = originalQuery.apply(this, arguments);
+        if (!descriptor || descriptor.name !== "geolocation") return result;
+        return result.then((status) => new Promise((resolve) => whenReady(() => {
+          if (cfg.enabled) {
+            const state = cfg.block ? "denied" : "granted";
+            try { Object.defineProperty(status, "state", { get: () => state, configurable: true }); } catch { /* browser object may be immutable */ }
+          }
+          resolve(status);
+        })));
       },
     }.query;
-    install(P, "query", mask(query, "query", 1));
+    install(permissionsProto, "query", mask(query, "query", 1));
   }
-
 })();

@@ -1,9 +1,7 @@
-// Pembuat PAC script untuk proxy. Murni (tanpa API Chrome) supaya bisa dites di Node.
-//
-// Catatan desain:
-//  - Tidak memakai isInNet()/dnsResolve(): keduanya melakukan DNS lookup lokal untuk setiap host
-//    (membocorkan nama situs ke DNS asli). Pengecekan jaringan lokal dilakukan dengan regex pada host.
-//  - Default "fail closed": kalau proxy mati, koneksi gagal — TIDAK jatuh ke koneksi langsung (IP asli).
+// PAC generator. Kept pure so routing decisions can be tested without Chrome.
+// Never uses DNS-resolution PAC helpers. failClosed defaults to true: no DIRECT fallback
+// for routes selected for proxying. Explicit local-network routes and sites-mode exclusions
+// intentionally remain DIRECT; this is browser proxying, not a device-wide VPN.
 
 export const SCHEMES = Object.freeze({
   http: "PROXY",
@@ -15,45 +13,42 @@ export const SCHEMES = Object.freeze({
 const LABEL_RE = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i;
 
 function isValidHost(host) {
-  if (!host || host.length > 253) return false;
+  if (typeof host !== "string" || !host || host.length > 253 || /\s|[\\/:;"'`]/.test(host)) return false;
   const labels = host.split(".");
   if (labels.some((label) => !label || label.length > 63 || !LABEL_RE.test(label))) return false;
-  if (/^\d+(?:\.\d+){3}$/.test(host)) {
-    return labels.every((label) => Number(label) <= 255);
-  }
+  if (/^\d+(?:\.\d+){3}$/.test(host)) return labels.every((label) => Number(label) <= 255);
   return true;
 }
 
-/** Validasi profil proxy. Mengembalikan teks error, atau "" jika valid. */
-export function validateProfile(p) {
-  if (!p || typeof p !== "object") return "Profil tidak valid.";
-  if (!Object.hasOwn(SCHEMES, p.scheme)) return "Jenis proxy tidak dikenal.";
-  if (!isValidHost(String(p.host ?? ""))) return "Host harus berupa domain atau alamat IPv4 yang valid (tanpa http://).";
-  const port = Number(p.port);
+export function validateProfile(profile) {
+  if (!profile || typeof profile !== "object") return "Profil tidak valid.";
+  if (!Object.hasOwn(SCHEMES, profile.scheme)) return "Jenis proxy tidak dikenal.";
+  if (!isValidHost(String(profile.host ?? ""))) return "Host harus domain/IPv4 valid tanpa skema atau path.";
+  const port = Number(profile.port);
   if (!Number.isInteger(port) || port < 1 || port > 65535) return "Port harus 1–65535.";
-  if (p.username && (p.scheme === "socks5" || p.scheme === "socks4")) {
-    return "Chrome tidak mendukung login untuk proxy SOCKS. Pakai proxy HTTP/HTTPS, atau SOCKS tanpa login.";
+  if ((profile.scheme === "socks5" || profile.scheme === "socks4") && (profile.username || profile.password)) {
+    return "Chrome tidak mendukung autentikasi username/password untuk proxy SOCKS.";
   }
   return "";
 }
 
-const cleanDomains = (list) =>
-  (Array.isArray(list) ? list : []).map((d) => String(d).trim().toLowerCase()).filter((d) => /^[a-z0-9.-]+$/.test(d));
+function validDomain(domain) {
+  if (!domain || domain.length > 253) return false;
+  const labels = domain.split(".");
+  return labels.every((label) => label.length > 0 && label.length <= 63 && LABEL_RE.test(label));
+}
 
-/**
- * @param {object} o
- * @param {{scheme:string,host:string,port:number|string}} o.profile
- * @param {"all"|"sites"} o.mode   all = semua situs lewat proxy; sites = hanya situs di `sites`
- * @param {string[]} o.sites       dipakai di mode "sites"
- * @param {string[]} o.bypass      dipakai di mode "all": situs yang tetap langsung
- * @param {boolean} o.failClosed
- */
+const cleanDomains = (list) =>
+  [...new Set((Array.isArray(list) ? list : []).map((value) => String(value).trim().toLowerCase()).filter(validDomain))];
+
 export function buildPac({ profile, mode = "all", sites = [], bypass = [], failClosed = true }) {
-  const err = validateProfile(profile);
-  if (err) throw new Error(err);
+  const error = validateProfile(profile);
+  if (error) throw new Error(error);
+  if (mode !== "all" && mode !== "sites") throw new Error("Mode proxy tidak dikenal.");
 
   const route = `${SCHEMES[profile.scheme]} ${profile.host}:${Number(profile.port)}`;
-  const proxied = failClosed ? route : `${route}; DIRECT`;
+  const selectedRoute = failClosed === false ? `${route}; DIRECT` : route;
+  const proxyHost = JSON.stringify(String(profile.host).toLowerCase());
 
   return `function FindProxyForURL(url, host) {
   host = host.toLowerCase();
@@ -65,19 +60,20 @@ export function buildPac({ profile, mode = "all", sites = [], bypass = [], failC
     }
     return false;
   }
-  // jaringan lokal & alamat loopback selalu langsung
-  if (host.indexOf(".") === -1 || host === "localhost" ||
-      /^(127\\.|10\\.|192\\.168\\.|169\\.254\\.|172\\.(1[6-9]|2[0-9]|3[01])\\.)/.test(host) ||
-      /\\.(local|lan|internal)$/.test(host)) return "DIRECT";
-  // server proxy itu sendiri tidak boleh lewat proxy
-  if (host === ${JSON.stringify(String(profile.host).toLowerCase())}) return "DIRECT";
-  ${
-    mode === "sites"
-      ? `if (inList(sites)) return ${JSON.stringify(proxied)};
-  return "DIRECT";`
-      : `if (inList(bypass)) return "DIRECT";
-  return ${JSON.stringify(proxied)};`
+  function isPrivateIPv4(value) {
+    return /^(0\\.|10\\.|127\\.|169\\.254\\.|192\\.168\\.|172\\.(1[6-9]|2[0-9]|3[01])\\.|100\\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\\.)/.test(value);
   }
+  function isLocalIPv6(value) {
+    value = value.replace(/^\\[|\\]$/g, "");
+    return value === "::1" || /^f[cd][0-9a-f]{0,2}:/i.test(value) || /^fe[89ab][0-9a-f]:/i.test(value);
+  }
+  // Local names and private/link-local networks intentionally bypass the proxy.
+  if (host.indexOf(".") === -1 || host === "localhost" || /\\.(local|lan|internal)$/.test(host) || isPrivateIPv4(host) || isLocalIPv6(host)) return "DIRECT";
+  // Avoid routing the proxy endpoint through itself.
+  if (host === ${proxyHost}) return "DIRECT";
+  ${mode === "sites"
+    ? `if (inList(sites)) return ${JSON.stringify(selectedRoute)};\n  return "DIRECT";`
+    : `if (inList(bypass)) return "DIRECT";\n  return ${JSON.stringify(selectedRoute)};`}
 }
 `;
 }

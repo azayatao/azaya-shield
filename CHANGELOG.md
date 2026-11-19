@@ -1,19 +1,7 @@
-# Changelog
+## Security hardening notes (2026-11)
 
-## Unreleased
-- Email guard & login guard (mode belajar), halaman lab skenario dummy, rotasi profil proxy, pengerasan konfigurasi lokasi palsu (nonce), validasi host proxy lebih ketat.
-- Perbaikan: form tidak lagi diblokir saat pengaturan email guard belum/gagal dimuat.
+Proxy profile application now checks Chrome's proxy ownership, avoids clearing settings controlled by another extension, uses a local blackhole PAC route for invalid active configurations, and reports WebRTC-policy failures instead of claiming complete protection. Proxy authentication is limited to HTTP(S) challenges matching the selected profile's exact host and port, with request-attempt tracking cleaned up on completion/error.
 
-## 1.3.0
-- Pengelola proxy (ganti IP): profil HTTP/HTTPS/SOCKS, mode semua situs / situs tertentu, fail-closed, pembatasan WebRTC, login proxy, cek IP, dan "samakan lokasi palsu dengan lokasi IP".
+PAC input validation now rejects malformed modes/domains and recognizes additional private/link-local IPv4 and local IPv6 destinations. Remember that local/private routes and sites-mode exclusions intentionally remain direct.
 
-## 1.2.0
-- Lokasi palsu: pilih tempat sendiri (cari nama, koordinat manual, preset); menimpa `navigator.geolocation` dan `permissions.query`; aman by default (ditolak jika belum ada tempat terpilih).
-
-## 1.1.0
-- Stub skrip iklan/pelacak lewat redirect `declarativeNetRequest`.
-- Filter kosmetik tersamar (tidak menyentuh elemen umpan anti-adblock).
-- Element picker untuk menyembunyikan overlay / dinding anti-adblock.
-
-## 1.0.0
-- Ad & tracker blocker (`declarativeNetRequest`), deteksi phishing/malware, popup & halaman pengaturan.
+The geolocation shim now validates and bounds configuration and coordinate jitter. Important limitation: its bridge uses page-visible DOM events, so the nonce is only a correlation value, not authentication. This feature is **not** guaranteed against hostile page JavaScript; see `SECURITY-NOTES.md`. No Node test can establish absence of network leaks; perform browser-level IPv4/IPv6/DNS/WebRTC checks with a proxy endpoint you control.
